@@ -32,6 +32,10 @@ jobs:
           dotnet-version: '8.0.x'
           cache: false 
 
+      - name: Restore
+        working-directory: ./BlazorDashboard
+        run: dotnet restore
+
       - name: Build (Release)
         working-directory: ./BlazorDashboard
         run: dotnet build --configuration Release --no-restore
