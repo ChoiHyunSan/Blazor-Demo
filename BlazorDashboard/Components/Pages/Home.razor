@@ -1,0 +1,94 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using BlazorDashboard.Models
+@using BlazorDashboard.Services
+@inject NoteService Notes
+
+
+<h3 class="mb-3">Notes (PostgreSQL + Dapper)</h3>
+
+<div class="input-group mb-3" style="max-width: 520px;">
+    <input class="form-control" @bind="_newTitle" placeholder="새 노트 제목…" />
+    <button class="btn btn-primary" @onclick="AddNote" disabled="@string.IsNullOrWhiteSpace(_newTitle)">
+        추가
+    </button>
+</div>
+
+@if (_error is not null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_notes is null)
+{
+    <p>로딩 중…</p>
+}
+else if (!_notes.Any())
+{
+    <p>노트가 없습니다.</p>
+}
+else
+{
+    <ul class="list-group" style="max-width: 520px;">
+        @foreach (var n in _notes)
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>
+                    <strong>#@n.Id</strong> &nbsp; @n.Title
+                    <small class="text-muted ms-2">(@n.CreatedAt.ToLocalTime())</small>
+                </span>
+                <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(n.Id)">삭제</button>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private IEnumerable<NoteService.Note>? _notes;
+    private string _newTitle = "";
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        try
+        {
+            _error = null;
+            _notes = await Notes.GetNotesAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task AddNote()
+    {
+        try
+        {
+            await Notes.AddNoteAsync(_newTitle.Trim());
+            _newTitle = "";
+            await Load();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task Delete(long id)
+    {
+        try
+        {
+            await Notes.DeleteNoteAsync(id);
+            await Load();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

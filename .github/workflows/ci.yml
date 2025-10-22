@@ -1,0 +1,41 @@
+name: CI - Blazor build
+
+# main 브랜치에 푸시되거나 풀 리퀘스트가 생성될 때 워크플로우가 실행됩니다.
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'BlazorDashboard/**'
+      - '.github/workflows/**'
+
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'BlazorDashboard/**'
+      - '.github/workflows/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+          cache: true 
+
+      - name: Restore
+        working-directory: ./BlazorDashboard
+        run: dotnet restore
+
+      - name: Build (Release)
+        working-directory: ./BlazorDashboard
+        run: dotnet build --configuration Release --no-restore

@@ -1,0 +1,48 @@
+# --- Visual Studio / .NET Core 기본 ---
+bin/
+obj/
+out/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+*.cache/
+*.pdb
+
+# --- Rider / VSCode / 기타 IDE ---
+.idea/
+.vscode/
+*.iml
+
+# --- ASP.NET / Blazor ---
+wwwroot/dist/
+wwwroot/build/
+*.db
+*.sqlite
+*.db-wal
+*.db-shm
+
+# --- Docker ---
+docker/postgres/data/
+docker/pgadmin/data/
+docker-compose.override.yml
+*.log
+
+# --- 환경파일 / 시크릿 ---
+.env
+*.env
+secrets.json
+appsettings.*.local.json
+
+# --- OS / 임시파일 ---
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+
+# --- GitHub Actions 캐시나 로컬 빌드 산출물 ---
+.github/workflows/**/cache/
+artifacts/
+
+.vs/
