@@ -13,7 +13,7 @@ namespace BlazorDashboard.Services
 
         public record Note(long Id, string Title, DateTime CreatedAt);
 
-        public async Task<IEnumerable<Note>> GetNotesAsync()
+        public async virtual Task<IEnumerable<Note>> GetNotesAsync()
         {
             const string sql = """
                 SELECT Id, Title, Created_at
@@ -25,7 +25,7 @@ namespace BlazorDashboard.Services
             await using var conn = await _dataSource.OpenConnectionAsync();
             return await conn.QueryAsync<Note>(sql);
         }
-        public async Task<long> AddNoteAsync(string title)
+        public async virtual Task<long> AddNoteAsync(string title)
         {
             const string sql = """
                 INSERT INTO notes (Title)
@@ -36,7 +36,7 @@ namespace BlazorDashboard.Services
             await using var conn = await _dataSource.OpenConnectionAsync();
             return await conn.ExecuteScalarAsync<long>(sql, new { Title = title });
         }
-        public async Task<int> DeleteNoteAsync(long id)
+        public async virtual Task<int> DeleteNoteAsync(long id)
         {
             const string sql = """
                 DELECT FROM notes
