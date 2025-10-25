@@ -41,5 +41,4 @@ jobs:
         run: dotnet build --configuration Release --no-restore
     
       - name: Test (bUnit + xUnit)
-        working-directory: ./tests/BlazorDashboard.Tests
-        run: dotnet test --no-build --verbosity normal
+        run: dotnet test ./BlazorDashboard.Tests --no-build --verbosity normal
