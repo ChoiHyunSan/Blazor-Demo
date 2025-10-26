@@ -18,6 +18,7 @@ builder.Services.AddSingleton<NpgsqlDataSource>(dataSource);
 
 // NoteService µî·Ï
 builder.Services.AddSingleton<NoteService>();
+builder.Services.AddSingleton<AdvancedNotesService>();
 
 DefaultTypeMap.MatchNamesWithUnderscores = true;
 

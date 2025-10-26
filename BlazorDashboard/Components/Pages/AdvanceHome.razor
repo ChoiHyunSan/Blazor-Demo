@@ -1,0 +1,356 @@
+﻿@page "/advanced-notes"
+@rendermode InteractiveServer
+@using BlazorDashboard.Services
+@inject AdvancedNotesService Notes
+
+<h3 class="mb-3">Advanced Notes (CRUD)</h3>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<!-- 필터: 조회를 눌러야 적용 -->
+<div class="card mb-3" style="max-width: 900px;">
+    <div class="card-body">
+        <div class="row g-2">
+            <div class="col-sm-6">
+                <label class="form-label">제목 포함</label>
+                <input class="form-control" @bind="_filters.TitleContains" />
+            </div>
+            <div class="col-sm-3">
+                <label class="form-label">보관 상태</label>
+                <select class="form-select" @bind="_filters.ArchivedSelect">
+                    <option value="">(전체)</option>
+                    <option value="true">보관됨</option>
+                    <option value="false">보관 안 함</option>
+                </select>
+            </div>
+            <div class="col-sm-3 d-grid">
+                <button class="btn btn-primary" @onclick="ApplyAndSearch">조회</button>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+            <label>페이지 크기</label>
+            <select class="form-select form-select-sm" style="width:auto" @bind="_filters.PageSize">
+                @foreach (var s in new[] { 10, 20, 50, 100 })
+                {
+                    <option value="@s">@s</option>
+                }
+            </select>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ResetFilters">필터 초기화</button>
+        </div>
+    </div>
+</div>
+
+<!-- 생성 -->
+<div class="card mb-3" style="max-width: 900px;">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-sm-3">
+                <label class="form-label">제목</label>
+                <input class="form-control" @bind="_create.Title" />
+            </div>
+            <div class="col-sm-7">
+                <label class="form-label">내용(선택)</label>
+                <textarea class="form-control" rows="1" @bind="_create.Content"></textarea>
+            </div>
+            <div class="col-sm-2 d-grid">
+                <button class="btn btn-success"
+                        @onclick="CreateAsync"
+                        disabled="@string.IsNullOrWhiteSpace(_create.Title)">
+                    추가
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!_hasSearched)
+{
+    <p class="text-muted">필터를 설정하고 <strong>조회</strong>를 눌러 결과를 확인하세요.</p>
+}
+else if (_loading)
+{
+    <p>로딩 중…</p>
+}
+else if (_items.Count == 0)
+{
+    <p class="text-muted">결과가 없습니다.</p>
+}
+else
+{
+    <div class="table-responsive" style="max-width: 900px;">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th style="width:80px;">ID</th>
+                    <th style="width:200px;">제목</th>
+                    <th>내용</th>
+                    <th style="width:150px;">생성</th>
+                    <th style="width:150px;">수정</th>
+                    <th style="width:110px;">상태</th>
+                    <th style="width:180px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var n in _items)
+                {
+                    var editing = _edit?.Id == n.Id;
+                    <tr>
+                        <td>@n.Id</td>
+                        <td>
+                            @if (editing)
+                            {
+                                <input class="form-control form-control-sm" @bind="_edit!.Title" />
+                            }
+                            else
+                            {
+
+                                @n.Title
+                            }
+                        </td>
+                        <td>
+                            @if (editing)
+                            {
+                                <textarea class="form-control form-control-sm" rows="2" @bind="_edit!.Content"></textarea>
+                            }
+                            else
+                            {
+                                <span title="@n.Content">@Truncate(n.Content, 100)</span>
+                            }
+                        </td>
+                        <td>@n.CreatedAt.ToLocalTime():g</td>
+                        <td>@(UseUpdatedAt? n.UpdatedAt.ToLocalTime().ToString("g") : n.UpdatedAt.ToLocalTime().ToString("g"))</td>
+                        <td>
+                            @if (editing)
+                            {
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" @bind="_edit!.Archived" />
+                                    <label class="form-check-label">@(_edit!.Archived ? "보관됨" : "활성")</label>
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="badge @(n.Archived ? "bg-secondary" : "bg-success")">
+                                    @(n.Archived ? "보관됨" : "활성")
+                                </span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            @if (editing)
+                            {
+                                <button class="btn btn-sm btn-primary me-1" @onclick="SaveAsync">저장</button>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="CancelEdit">취소</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => BeginEdit(n)">수정</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(n.Id)">삭제</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center" style="max-width: 900px;">
+        <small>@RangeText</small>
+        <div class="btn-group">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="PrevPage" disabled="@(_appliedQuery.Page <= 1)">이전</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="NextPage" disabled="@(_appliedQuery.Page >= LastPage)">다음</button>
+        </div>
+    </div>
+}
+
+@code {
+    // ---------- ViewModels ----------
+    private class CreateVM
+    {
+        public string Title { get; set; } = "";
+        public string? Content { get; set; }
+    }
+
+    private class EditVM
+    {
+        public long Id { get; set; }
+        public string Title { get; set; } = "";
+        public string? Content { get; set; }
+        public bool Archived { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; } // 표시는 그대로
+    }
+
+    private class Filters
+    {
+        public string? TitleContains { get; set; }
+        public string? ArchivedSelect { get; set; } // "", "true", "false"
+        public int PageSize { get; set; } = 10;
+    }
+
+    // ---------- State ----------
+    private Filters _filters = new();
+    private AdvancedNotesService.Query _appliedQuery = new()
+    {
+        SortBy = "updated",
+        Desc = true,
+        Page = 1,
+        PageSize = 10
+    };
+
+    private bool _hasSearched = false;
+    private bool _loading;
+    private string? _error;
+
+    private List<AdvancedNotesService.NoteAdv> _items = new();
+    private int _total;
+
+    private CreateVM _create = new();
+    private EditVM? _edit;
+
+    // 서비스 모델에 UpdatedAt이 아닌 UpdateAt(타이포)일 때 대비용 스위치
+    private bool UseUpdatedAt =>
+        typeof(AdvancedNotesService.NoteAdv).GetProperty("UpdatedAt") is not null;
+
+    // ---------- Actions ----------
+    private async Task ApplyAndSearch()
+    {
+        _appliedQuery.TitleContains = _filters.TitleContains;
+        _appliedQuery.Archived = _filters.ArchivedSelect switch
+        {
+            "true" => true,
+            "false" => false,
+            _ => null
+        };
+        _appliedQuery.PageSize = _filters.PageSize;
+        _appliedQuery.Page = 1;
+
+        _hasSearched = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _loading = true;
+            _error = null;
+
+            var (items, total) = await Notes.SearchAsync(_appliedQuery);
+            _items = items.ToList();
+            _total = total;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        try
+        {
+            var title = _create.Title?.Trim();
+            if (string.IsNullOrWhiteSpace(title)) return;
+
+            await Notes.CreateAsync(title, string.IsNullOrWhiteSpace(_create.Content) ? null : _create.Content);
+            _create = new CreateVM();
+
+            _appliedQuery.Page = 1;
+            _hasSearched = true;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private void BeginEdit(AdvancedNotesService.NoteAdv n)
+    {
+        // 서비스 모델은 immutable일 수 있으므로 mutable VM으로 복사
+        var updatedAt = UseUpdatedAt
+          ? (DateTime)(n.GetType().GetProperty("UpdatedAt")!.GetValue(n)!)
+          : (DateTime)(n.GetType().GetProperty("UpdateAt")!.GetValue(n)!);
+
+        _edit = new EditVM
+        {
+            Id = n.Id,
+            Title = n.Title,
+            Content = n.Content,
+            Archived = n.Archived,
+            CreatedAt = n.CreatedAt,
+            UpdatedAt = updatedAt
+        };
+    }
+
+    private void CancelEdit() => _edit = null;
+
+    private async Task SaveAsync()
+    {
+        if (_edit is null) return;
+        try
+        {
+            await Notes.UpdateAsync(_edit.Id, _edit.Title, _edit.Content, _edit.Archived);
+            _edit = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task DeleteAsync(long id)
+    {
+        try
+        {
+            await Notes.DeleteAsync(id);
+
+            var newTotal = Math.Max(0, _total - 1);
+            var last = (int)Math.Ceiling(newTotal / (double)_appliedQuery.PageSize);
+            if (_appliedQuery.Page > last) _appliedQuery.Page = Math.Max(1, last);
+
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private void PrevPage()
+    {
+        if (_appliedQuery.Page > 1)
+        {
+            _appliedQuery.Page--;
+            _ = LoadAsync();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (_appliedQuery.Page < LastPage)
+        {
+            _appliedQuery.Page++;
+            _ = LoadAsync();
+        }
+    }
+
+    private int LastPage => Math.Max(1, (int)Math.Ceiling(_total / (double)_appliedQuery.PageSize));
+
+    private string RangeText =>
+      _total == 0 ? "0" :
+      $"{((_appliedQuery.Page - 1) * _appliedQuery.PageSize) + 1}–{Math.Min(_appliedQuery.Page * _appliedQuery.PageSize, _total)} / 총 {_total}";
+
+    private static string Truncate(string? s, int len)
+      => string.IsNullOrEmpty(s) ? "" : (s!.Length <= len ? s : s.Substring(0, len) + "…");
+
+    private void ResetFilters()
+    {
+        _filters = new();     
+        _appliedQuery.Page = 1;
+
+        _hasSearched = false;
+        _items.Clear();
+        _total = 0;
+        StateHasChanged();
+    }
+}

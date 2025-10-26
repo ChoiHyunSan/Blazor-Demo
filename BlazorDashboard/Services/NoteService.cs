@@ -39,7 +39,7 @@ namespace BlazorDashboard.Services
         public async virtual Task<int> DeleteNoteAsync(long id)
         {
             const string sql = """
-                DELECT FROM notes
+                DELETE FROM notes
                 WHERE Id = @Id;
             """;
 
