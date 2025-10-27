@@ -1,0 +1,61 @@
+﻿@page "/new-page"
+@rendermode InteractiveServer
+@using BlazorDashboard.Models
+@using BlazorDashboard.Services
+@inject NewService New
+
+<h3>@title</h3>
+
+<div class="input-group mb-3" style="max-width: 520px;">
+	<input class="form-control" @bind="_newItemName" placeholder="Enter new item name..." />
+	<input class="form-control" @bind="_newDescription" placeholder="Enter new Description" />
+	<button class="btn btn-primary" @onclick="AddItem" disabled="@(!CheckAddButtonEnabled())">
+		추가
+	</button>
+</div>
+
+@if(_items is null || _items.Count == 0)
+{
+	<p>No items to display.</p>
+}
+else
+{
+	<ul class="list-group" style="max-width: 1040px;">
+		@foreach(var item in _items)
+		{
+			<li>
+				<strong>@item.Id</strong> &nbsp; @item.Name
+				<small class="text-muted ms-2">(@item.Description)</small>
+			</li>
+		}
+	</ul>
+}
+
+@code {
+	private string title = "New Page Title";
+
+	private List<NewItem> _items = new();
+
+	private string _newItemName = "";
+	private string _newDescription = "";
+
+	// 아이템 추가 메서드
+	public void AddItem()
+	{
+		var newItem = new NewItem
+		{
+			Id = Guid.NewGuid().ToString(),
+			Name = _newItemName,
+			Description = _newDescription
+		};
+		_items.Add(newItem);
+		_newItemName = "";
+		_newDescription = "";
+	}
+
+	// 아이템 추가버튼 활성화 체크 메서드
+	public bool CheckAddButtonEnabled()
+	{
+		return !string.IsNullOrWhiteSpace(_newItemName) && !string.IsNullOrWhiteSpace(_newDescription);
+	}
+}
