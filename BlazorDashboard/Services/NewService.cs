@@ -2,5 +2,9 @@
 {
     public class NewService
     {
+        public void Method2()
+        {
+
+        }
     }
 }
