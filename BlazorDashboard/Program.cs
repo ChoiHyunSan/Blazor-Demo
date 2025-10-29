@@ -20,6 +20,7 @@ builder.Services.AddSingleton<NpgsqlDataSource>(dataSource);
 builder.Services.AddSingleton<NoteService>();
 builder.Services.AddSingleton<AdvancedNotesService>();
 builder.Services.AddSingleton<NewService>();
+builder.Services.AddSingleton<UserMailService>();
 
 DefaultTypeMap.MatchNamesWithUnderscores = true;
 
