@@ -81,7 +81,6 @@
     List<UserVm> Users { get; set; } = new();
 
     // 선택한 유저 목록
-    HashSet<int> SelectUsers { get; set; } = new();
     bool IsAllSelected = false;
 
     // 메일 발송에 필요한 필드
@@ -124,30 +123,51 @@
             Users.ForEach(u =>
             {
                 u.Selected = false;
-			});
-			SelectUsers.Clear();
+            });
         }
         else
         {
             Users.ForEach(u =>
             {
                 u.Selected = true;
-                SelectUsers.Add(u.Id);
             });
         }
 
-		IsAllSelected = !IsAllSelected;
+        IsAllSelected = !IsAllSelected;
     }
 
     private async Task OnSendAsync()
     {
         try
         {
-               
+            var selectList = Users.Where(u => u.Selected).Select(u => u.Id).ToList();
+            var mail = new Mail
+            {
+				title = Title,
+                body = Body, 
+				itemId = ItemId,
+				itemCount = ItemCount
+            };
+
+            var result = await UserMails.SendMailAsync(selectList, mail);
+            if (!result)
+            {
+                error = "메일 발송에 실패했습니다.";
+            }
+
+            ClearInput();
         } 
         catch (Exception ex)
         {
-			Console.WriteLine(ex);
+            Console.WriteLine(ex);
         }
+    }
+
+    private void ClearInput()
+    {
+        Title = string.Empty;
+        Body = string.Empty;
+        ItemCount = 0;
+        ItemId = 0;
     }
 }
