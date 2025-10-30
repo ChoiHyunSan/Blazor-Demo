@@ -68,6 +68,8 @@
 </div>
 
 @code {
+
+    // 유저 뷰모델
     class UserVm
     {
         public int Id { get; set; }
@@ -75,12 +77,77 @@
         public bool Selected { get; set; }
     }
 
+    // 유저 목록
     List<UserVm> Users { get; set; } = new();
+
+    // 선택한 유저 목록
+    HashSet<int> SelectUsers { get; set; } = new();
+    bool IsAllSelected = false;
+
+    // 메일 발송에 필요한 필드
     string Title { get; set; } = string.Empty;
     string Body { get; set; } = string.Empty;
     int ItemId { get; set; }
     int ItemCount { get; set; } = 1;
 
-    void OnSelectAll() { }
-    Task OnSendAsync() { return Task.CompletedTask; }
+    // 에러 메시지 
+    private string? error = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            error = null;
+            var users = await UserMails.GetUsersAsync();
+            Users = users.Select(u => new UserVm
+                {
+                    Id = u.Id,
+                    Name = u.Name,
+                    Selected = false
+                }).ToList();
+        }
+        catch(Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private void OnSelectAll()
+    {
+        if (IsAllSelected)
+        {
+            Users.ForEach(u =>
+            {
+                u.Selected = false;
+			});
+			SelectUsers.Clear();
+        }
+        else
+        {
+            Users.ForEach(u =>
+            {
+                u.Selected = true;
+                SelectUsers.Add(u.Id);
+            });
+        }
+
+		IsAllSelected = !IsAllSelected;
+    }
+
+    private async Task OnSendAsync()
+    {
+        try
+        {
+               
+        } 
+        catch (Exception ex)
+        {
+			Console.WriteLine(ex);
+        }
+    }
 }
