@@ -13,6 +13,8 @@
         public void Method2()
         {
             Console.WriteLine("This is method 2");
+
+            Console.WriteLine("Add New Logic");
         }
     }
 }
