@@ -8,7 +8,7 @@
         }
         public void method1()
         {
-
+            Console.WriteLine("This is method 1");
         }
         public void Method2()
         {
